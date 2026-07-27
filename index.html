@@ -119,9 +119,10 @@
       border: none;
     }
 
-    /* Ajuste para permitir clique no iframe do YT caso necessário no mobile */
+    /* Permite receber cliques para desbloquear o play do YouTube */
     .custom-player-box.yt-mode .yt-embed-wrapper {
       pointer-events: auto;
+      z-index: 5;
     }
 
     /* Marca d'água Discreta */
@@ -368,7 +369,6 @@
       }
       checkEmbedMode();
 
-      // --- CAMADA DE SEGURANÇA E BLOQUEIOS ---
       document.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         return false;
@@ -429,7 +429,7 @@
 
       const baseUrl = window.location.href.split("#")[0];
       const embedUrl = `${baseUrl}#${server}|${encodeURIComponent(inputVal)}`;
-      const iframeCode = `<iframe src="${embedUrl}" width="100%" height="450" frameborder="0" allowfullscreen scrolling="no"></iframe>`;
+      const iframeCode = `<iframe src="${embedUrl}" width="100%" height="450" frameborder="0" allowfullscreen scrolling="no" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
 
       document.getElementById("iframeOutput").value = iframeCode;
       document.getElementById("openTabBtn").href = embedUrl;
@@ -439,7 +439,6 @@
       renderizarPlayer(server, inputVal, previewContainer);
     }
 
-    // Função auxiliar para gerenciar Fullscreen com rotação automática em landscape (Mobile)
     function toggleFullscreen(container) {
       if (!document.fullscreenElement) {
         container.requestFullscreen().then(() => {
@@ -710,12 +709,23 @@
 
       ytPlayerInstance = new YT.Player(playerElementId, {
         videoId: ytId,
-        playerVars: { controls: 0, modestbranding: 1, rel: 0, showinfo: 0, iv_load_policy: 3, disablekb: 1, fs: 0, cc_load_policy: 0, hl: 'en', origin: window.location.origin },
+        playerVars: { 
+          controls: 0, 
+          modestbranding: 1, 
+          rel: 0, 
+          showinfo: 0, 
+          iv_load_policy: 3, 
+          disablekb: 1, 
+          fs: 0, 
+          cc_load_policy: 0, 
+          hl: 'en', 
+          origin: window.location.origin 
+        },
         events: {
           onReady: (event) => {
             try { event.target.unloadModule("captions"); } catch(e) {}
             
-            // Tratamento de clique inicial para desbloquear reprodução em dispositivos móveis
+            // Força o clique direto no iframe para desbloquear a reprodução cruzada
             ytWrapper.addEventListener("click", () => {
               if (ytPlayerInstance && ytPlayerInstance.getPlayerState) {
                 const state = ytPlayerInstance.getPlayerState();
