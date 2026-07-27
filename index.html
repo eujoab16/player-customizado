@@ -48,6 +48,31 @@
     
     .form-group { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
     .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    
+    /* Grupo para input com botão colar embutido */
+    .input-with-paste {
+      display: flex;
+      flex: 1;
+      position: relative;
+    }
+    .input-with-paste input {
+      border-radius: 8px 0 0 8px;
+      border-right: none;
+    }
+    .btn-paste {
+      padding: 0 16px;
+      background: #334155;
+      color: #fff;
+      border: 1px solid #334155;
+      border-radius: 0 8px 8px 0;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn-paste:hover { background: #475569; }
+
     select, input[type="text"] {
       padding: 12px 16px;
       border-radius: 8px;
@@ -60,7 +85,6 @@
     }
     @media(min-width: 600px) {
       select { width: auto; min-width: 150px; }
-      input[type="text"] { flex: 1; }
     }
     select { cursor: pointer; }
     select:focus, input[type="text"]:focus { border-color: #38bdf8; }
@@ -119,12 +143,10 @@
       border: none;
     }
 
-    /* Trava de segurança para impedir cliques que abrem links externos / YouTube / OK.ru */
     .custom-player-box iframe {
       pointer-events: none !important;
     }
 
-    /* Camada bloqueadora invisível para capturar cliques apenas para o Play/Pause customizado */
     .player-shield {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -132,7 +154,6 @@
       cursor: pointer;
     }
 
-    /* Marca d'água Discreta */
     .player-watermark {
       position: absolute;
       top: 15px;
@@ -153,7 +174,6 @@
       opacity: 0;
     }
 
-    /* Barra de Controles e Lógica de Ocultação */
     .player-controls {
       position: absolute;
       bottom: 0; left: 0; right: 0;
@@ -167,7 +187,6 @@
       transition: opacity 0.3s ease, background 0.3s ease;
     }
 
-    /* A barra de progresso fica visível sempre */
     .progress-bar-container {
       width: 100%;
       height: 6px;
@@ -188,7 +207,6 @@
       border-radius: 3px;
     }
 
-    /* O restante dos botões/linha de controles */
     .controls-main-content {
       display: flex;
       flex-direction: column;
@@ -199,7 +217,6 @@
       transition: opacity 0.3s ease, max-height 0.3s ease;
     }
 
-    /* Se a caixa estiver com hide-ui (e tocando), esconde fundo e os botões, mantendo só a barrinha */
     .custom-player-box.hide-ui .player-controls {
       background: transparent;
       padding: 0;
@@ -214,7 +231,6 @@
       height: 4px;
     }
 
-    /* Quando pausado ou sem interatividade, tudo reaparece */
     .custom-player-box.paused .player-controls {
       background: linear-gradient(transparent, rgba(0, 0, 0, 0.95)) !important;
       padding: 10px 15px !important;
@@ -264,6 +280,24 @@
       fill: currentColor;
     }
 
+    /* Botão de velocidade estilizado em formato de texto compacto */
+    .speed-btn-text {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 35;
+      transition: background 0.2s;
+    }
+    .speed-btn-text:hover {
+      background: #0284c7;
+      border-color: #0284c7;
+    }
+
     .volume-group {
       display: flex;
       align-items: center;
@@ -292,27 +326,6 @@
       background: #e11d48;
       cursor: pointer;
     }
-
-    .speed-menu {
-      position: absolute;
-      bottom: 35px;
-      right: 0;
-      background: #0f172a; /* Fundo sólido corrigido para não ficar transparente */
-      border: 1px solid #475569;
-      border-radius: 6px;
-      display: none;
-      flex-direction: column;
-      padding: 4px 0;
-      z-index: 999;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
-    }
-    .speed-menu.active { display: flex; }
-    .speed-option {
-      background: none; border: none; color: #fff;
-      padding: 8px 16px; text-align: left; font-size: 13px; cursor: pointer; white-space: nowrap;
-    }
-    .speed-option:hover { background: #0284c7; }
-    .speed-option.selected { color: #38bdf8; font-weight: bold; }
 
     .time-display { font-size: 11px; font-family: monospace; }
     @media(min-width: 450px) {
@@ -360,7 +373,10 @@
           <option value="gdrive">Google Drive</option>
           <option value="generic">Link Direto (MP4 / WebM)</option>
         </select>
-        <input type="text" id="videoInput" placeholder="Cole a URL ou link embed aqui..." />
+        <div class="input-with-paste">
+          <input type="text" id="videoInput" placeholder="Cole a URL ou link embed aqui..." />
+          <button class="btn-paste" onclick="colarDoClipboard()">Colar</button>
+        </div>
       </div>
       <button class="btn-main" onclick="gerarEmbed()">Gerar Player</button>
     </div>
@@ -409,9 +425,17 @@
     const SVG_VOL_HIGH = `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
     const SVG_VOL_MUTE = `<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
     const SVG_FULLSCREEN = `<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`;
-    const SVG_SPEED = `<svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>`;
 
     const WATERMARK_TEXT = "JMPlayer";
+
+    async function colarDoClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        document.getElementById("videoInput").value = text;
+      } catch (err) {
+        alert("Não foi possível colar automaticamente. Use Ctrl+V.");
+      }
+    }
 
     window.addEventListener("DOMContentLoaded", () => {
       if (typeof YT !== 'undefined' && YT.Player) {
@@ -653,15 +677,8 @@
                 </div>
                 <span class="time-display" id="timeDisplay">00:00 / 00:00</span>
               </div>
-              <div class="controls-right" style="position: relative;">
-                <button class="ctrl-btn" id="speedBtn" title="Velocidade">${SVG_SPEED}</button>
-                <div class="speed-menu" id="speedMenu">
-                  <button class="speed-option" data-speed="0.5">0.5x</button>
-                  <button class="speed-option selected" data-speed="1">1.0x (Normal)</button>
-                  <button class="speed-option" data-speed="1.25">1.25x</button>
-                  <button class="speed-option" data-speed="1.5">1.5x</button>
-                  <button class="speed-option" data-speed="2">2.0x</button>
-                </div>
+              <div class="controls-right">
+                <button class="speed-btn-text" id="speedBtn" title="Alterar Velocidade">1.0x</button>
                 <button class="ctrl-btn" id="fullBtn">${SVG_FULLSCREEN}</button>
               </div>
             </div>
@@ -675,11 +692,21 @@
       const muteBtn = container.querySelector("#muteBtn");
       const volumeSlider = container.querySelector("#volumeSlider");
       const speedBtn = container.querySelector("#speedBtn");
-      const speedMenu = container.querySelector("#speedMenu");
       const fullBtn = container.querySelector("#fullBtn");
       const progressBar = container.querySelector("#progressBar");
       const progressContainer = container.querySelector("#progressContainer");
       const timeDisplay = container.querySelector("#timeDisplay");
+
+      const speeds = [1.0, 1.25, 1.5, 2.0, 0.5];
+      let speedIndex = 0;
+
+      speedBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        speedIndex = (speedIndex + 1) % speeds.length;
+        const newSpeed = speeds[speedIndex];
+        video.playbackRate = newSpeed;
+        speedBtn.innerText = newSpeed + "x";
+      });
 
       function togglePlay() {
         if (video.paused) {
@@ -719,26 +746,6 @@
         video.volume = e.target.value;
         video.muted = (e.target.value == 0);
         muteBtn.innerHTML = (e.target.value == 0) ? SVG_VOL_MUTE : SVG_VOL_HIGH;
-      });
-
-      speedBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        speedMenu.classList.toggle("active");
-      });
-
-      document.addEventListener("click", () => {
-        speedMenu.classList.remove("active");
-      });
-
-      speedMenu.querySelectorAll(".speed-option").forEach(opt => {
-        opt.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const rate = parseFloat(opt.getAttribute("data-speed"));
-          video.playbackRate = rate;
-          speedMenu.querySelectorAll(".speed-option").forEach(o => o.classList.remove("selected"));
-          opt.classList.add("selected");
-          speedMenu.classList.remove("active");
-        });
       });
 
       video.addEventListener("timeupdate", () => {
@@ -790,15 +797,8 @@
                 </div>
                 <span class="time-display" id="timeDisplay">00:00 / 00:00</span>
               </div>
-              <div class="controls-right" style="position: relative;">
-                <button class="ctrl-btn" id="speedBtn" title="Velocidade">${SVG_SPEED}</button>
-                <div class="speed-menu" id="speedMenu">
-                  <button class="speed-option" data-speed="0.5">0.5x</button>
-                  <button class="speed-option selected" data-speed="1">1.0x (Normal)</button>
-                  <button class="speed-option" data-speed="1.25">1.25x</button>
-                  <button class="speed-option" data-speed="1.5">1.5x</button>
-                  <button class="speed-option" data-speed="2">2.0x</button>
-                </div>
+              <div class="controls-right">
+                <button class="speed-btn-text" id="speedBtn" title="Alterar Velocidade">1.0x</button>
                 <button class="ctrl-btn" id="fullBtn">${SVG_FULLSCREEN}</button>
               </div>
             </div>
@@ -810,12 +810,24 @@
       const muteBtn = container.querySelector("#muteBtn");
       const volumeSlider = container.querySelector("#volumeSlider");
       const speedBtn = container.querySelector("#speedBtn");
-      const speedMenu = container.querySelector("#speedMenu");
       const fullBtn = container.querySelector("#fullBtn");
       const progressBar = container.querySelector("#progressBar");
       const progressContainer = container.querySelector("#progressContainer");
       const timeDisplay = container.querySelector("#timeDisplay");
       const shield = container.querySelector("#shieldLayer");
+
+      const speeds = [1.0, 1.25, 1.5, 2.0, 0.5];
+      let speedIndex = 0;
+
+      speedBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        speedIndex = (speedIndex + 1) % speeds.length;
+        const newSpeed = speeds[speedIndex];
+        if (ytPlayerInstance && ytPlayerInstance.setPlaybackRate) {
+          ytPlayerInstance.setPlaybackRate(newSpeed);
+          speedBtn.innerText = newSpeed + "x";
+        }
+      });
 
       ytPlayerInstance = new YT.Player(playerElementId, {
         videoId: ytId,
@@ -885,19 +897,6 @@
             }
           }
         }
-      });
-
-      speedBtn.addEventListener("click", (e) => { e.stopPropagation(); speedMenu.classList.toggle("active"); });
-      document.addEventListener("click", () => speedMenu.classList.remove("active"));
-
-      speedMenu.querySelectorAll(".speed-option").forEach(opt => {
-        opt.addEventListener("click", (e) => {
-          e.stopPropagation();
-          ytPlayerInstance.setPlaybackRate(parseFloat(opt.getAttribute("data-speed")));
-          speedMenu.querySelectorAll(".speed-option").forEach(o => o.classList.remove("selected"));
-          opt.classList.add("selected");
-          speedMenu.classList.remove("active");
-        });
       });
 
       playBtn.addEventListener("click", (e) => {
