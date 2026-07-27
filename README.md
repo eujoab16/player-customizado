@@ -18,31 +18,7 @@
 * **Controles Customizados:** Interface própria de reprodução (Play/Pause, Barra de Progresso com Seek, Controle de Volume, Ajuste de Velocidade de Reprodução e Tela Cheia).
 * **Marca d'Água Discreta:** Identificação visual elegante fixada no player (`JMPlayer`).
 
----
 
-## 🛠️ Como Publicar no GitHub Pages
-
-Para colocar este projeto no ar de forma totalmente gratuita utilizando o GitHub Pages, siga os passos abaixo:
-
-1. **Crie um Repositório no GitHub:**
-   * Acesse [GitHub](https://github.com/) e crie um **New repository**.
-   * Defina um nome para o projeto (ex: `player-customizado`).
-   * Deixe o repositório como **Public** (Obrigatório para o GitHub Pages gratuito).
-   * Marque a opção **Add a README file** e clique em **Create repository**.
-
-2. **Adicione o Código Principal:**
-   * No seu repositório, clique em **Add file** > **Create new file**.
-   * Nomeie o arquivo exatamente como **`index.html`**.
-   * Cole todo o código HTML/JavaScript do player.
-   * Clique em **Commit changes...** para salvar.
-
-3. **Ative o GitHub Pages:**
-   * Vá até a aba **Settings** (Configurações) do seu repositório.
-   * No menu lateral esquerdo, clique em **Pages** (dentro de *Code and automation*).
-   * Em **Build and deployment** > **Branch**, altere de *None* para **`main`** (ou `master`) e mantenha a pasta em `/ (root)`.
-   * Clique em **Save**.
-
-O GitHub gerará o link oficial do seu site em instantes.
 
 ---
 
