@@ -142,11 +142,11 @@
       transition: opacity 0.3s ease;
       backdrop-filter: blur(2px);
     }
-    .custom-player-box:hover .player-watermark {
-      opacity: 0.9;
+    .custom-player-box.hide-ui .player-watermark {
+      opacity: 0;
     }
 
-    /* Barra de Controles */
+    /* Barra de Controles e Lógica de Ocultação */
     .player-controls {
       position: absolute;
       bottom: 0; left: 0; right: 0;
@@ -156,13 +156,20 @@
       padding: 10px 15px;
       gap: 8px;
       z-index: 30;
-      opacity: 0;
+      opacity: 1;
       transition: opacity 0.3s ease;
     }
-    .custom-player-box:hover .player-controls,
-    .custom-player-box.show-controls .player-controls,
+
+    /* Se a caixa estiver com a classe hide-ui (e não estiver pausada), esconde controles */
+    .custom-player-box.hide-ui .player-controls {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Quando pausado ou sem interatividade, os controles devem aparecer */
     .custom-player-box.paused .player-controls {
-      opacity: 1;
+      opacity: 1 !important;
+      pointer-events: auto !important;
     }
 
     .progress-bar-container {
@@ -317,7 +324,7 @@
 
     <div class="output-section" id="outputSection">
       <h3>Preview:</h3>
-      <div class="custom-player-box" id="previewContainer">
+      <div class="custom-player-box paused" id="previewContainer">
         <div class="status-msg">Aguardando carregamento...</div>
       </div>
 
@@ -341,7 +348,7 @@
     </div>
   </div>
 
-  <div id="fullscreenPlayer" class="custom-player-box"></div>
+  <div id="fullscreenPlayer" class="custom-player-box paused"></div>
 
   <script>
     const WORKER_URL = "https://meu-player-api.joabmarques04.workers.dev";
@@ -457,10 +464,47 @@
       }
     }
 
+    // Configura o comportamento de auto-ocultar os controles ao mover o mouse ou tocar na tela
+    function ativarOcultacaoDeControles(container) {
+      let hideTimeout = null;
+
+      function mostrarControlesTemporariamente() {
+        container.classList.remove("hide-ui");
+        if (hideTimeout) clearTimeout(hideTimeout);
+
+        // Se o player estiver tocando (não pausado), esconde após 2.5 segundos
+        if (!container.classList.contains("paused")) {
+          hideTimeout = setTimeout(() => {
+            container.classList.add("hide-ui");
+          }, 2500);
+        }
+      }
+
+      // Eventos de Mouse (Desktop)
+      container.addEventListener("mousemove", mostrarControlesTemporariamente);
+      container.addEventListener("mouseleave", () => {
+        if (!container.classList.contains("paused")) {
+          container.classList.add("hide-ui");
+        }
+      });
+
+      // Eventos de Toque / Clique (Mobile e Geral)
+      container.addEventListener("click", () => {
+        if (container.classList.contains("hide-ui")) {
+          container.classList.remove("hide-ui");
+          mostrarControlesTemporariamente();
+        } else {
+          // Se já estava visível, permite reiniciar o timer
+          mostrarControlesTemporariamente();
+        }
+      });
+    }
+
     async function renderizarPlayer(server, target, container) {
       if (ytTimer) clearInterval(ytTimer);
       container.classList.remove("yt-mode");
       container.innerHTML = `<div class="status-msg">Carregando mídia...</div>`;
+      ativarOcultacaoDeControles(container);
 
       try {
         if (server === "youtube") {
@@ -602,15 +646,20 @@
         }
       }
 
-      playBtn.addEventListener("click", togglePlay);
+      playBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePlay();
+      });
       video.addEventListener("click", togglePlay);
 
-      muteBtn.addEventListener("click", () => {
+      muteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         video.muted = !video.muted;
         muteBtn.innerHTML = video.muted ? SVG_VOL_MUTE : SVG_VOL_HIGH;
         volumeSlider.value = video.muted ? 0 : video.volume;
       });
 
+      volumeSlider.addEventListener("click", (e) => e.stopPropagation());
       volumeSlider.addEventListener("input", (e) => {
         video.volume = e.target.value;
         video.muted = (e.target.value == 0);
@@ -627,7 +676,8 @@
       });
 
       speedMenu.querySelectorAll(".speed-option").forEach(opt => {
-        opt.addEventListener("click", () => {
+        opt.addEventListener("click", (e) => {
+          e.stopPropagation();
           const rate = parseFloat(opt.getAttribute("data-speed"));
           video.playbackRate = rate;
           speedMenu.querySelectorAll(".speed-option").forEach(o => o.classList.remove("selected"));
@@ -650,6 +700,7 @@
       });
 
       progressContainer.addEventListener("click", (e) => {
+        e.stopPropagation();
         if (!isNaN(video.duration)) {
           const rect = progressContainer.getBoundingClientRect();
           const pos = (e.clientX - rect.left) / rect.width;
@@ -657,7 +708,8 @@
         }
       });
 
-      fullBtn.addEventListener("click", () => {
+      fullBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         toggleFullscreen(container);
       });
     }
@@ -725,7 +777,6 @@
           onReady: (event) => {
             try { event.target.unloadModule("captions"); } catch(e) {}
             
-            // Força o clique direto no iframe para desbloquear a reprodução cruzada
             ytWrapper.addEventListener("click", () => {
               if (ytPlayerInstance && ytPlayerInstance.getPlayerState) {
                 const state = ytPlayerInstance.getPlayerState();
@@ -778,7 +829,8 @@
       document.addEventListener("click", () => speedMenu.classList.remove("active"));
 
       speedMenu.querySelectorAll(".speed-option").forEach(opt => {
-        opt.addEventListener("click", () => {
+        opt.addEventListener("click", (e) => {
+          e.stopPropagation();
           ytPlayerInstance.setPlaybackRate(parseFloat(opt.getAttribute("data-speed")));
           speedMenu.querySelectorAll(".speed-option").forEach(o => o.classList.remove("selected"));
           opt.classList.add("selected");
@@ -786,7 +838,8 @@
         });
       });
 
-      playBtn.addEventListener("click", () => {
+      playBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         if (ytPlayerInstance && ytPlayerInstance.getPlayerState) {
           if (ytPlayerInstance.getPlayerState() === YT.PlayerState.PLAYING) {
             ytPlayerInstance.pauseVideo();
@@ -796,7 +849,8 @@
         }
       });
 
-      muteBtn.addEventListener("click", () => {
+      muteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         if (ytPlayerInstance && ytPlayerInstance.isMuted) {
           if (ytPlayerInstance.isMuted()) {
             ytPlayerInstance.unMute();
@@ -810,6 +864,7 @@
         }
       });
 
+      volumeSlider.addEventListener("click", (e) => e.stopPropagation());
       volumeSlider.addEventListener("input", (e) => {
         ytPlayerInstance.setVolume(e.target.value);
         if (e.target.value == 0) { ytPlayerInstance.mute(); muteBtn.innerHTML = SVG_VOL_MUTE; }
@@ -817,11 +872,13 @@
       });
 
       progressContainer.addEventListener("click", (e) => {
+        e.stopPropagation();
         const rect = progressContainer.getBoundingClientRect();
         ytPlayerInstance.seekTo(((e.clientX - rect.left) / rect.width) * ytPlayerInstance.getDuration(), true);
       });
 
-      fullBtn.addEventListener("click", () => {
+      fullBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         toggleFullscreen(container);
       });
     }
