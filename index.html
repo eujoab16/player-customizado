@@ -297,20 +297,19 @@
       position: absolute;
       bottom: 35px;
       right: 0;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #334155;
+      background: #0f172a; /* Fundo sólido corrigido para não ficar transparente */
+      border: 1px solid #475569;
       border-radius: 6px;
       display: none;
       flex-direction: column;
       padding: 4px 0;
-      z-index: 40;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      backdrop-filter: blur(4px);
+      z-index: 999;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
     }
     .speed-menu.active { display: flex; }
     .speed-option {
       background: none; border: none; color: #fff;
-      padding: 6px 16px; text-align: left; font-size: 13px; cursor: pointer; white-space: nowrap;
+      padding: 8px 16px; text-align: left; font-size: 13px; cursor: pointer; white-space: nowrap;
     }
     .speed-option:hover { background: #0284c7; }
     .speed-option.selected { color: #38bdf8; font-weight: bold; }
@@ -508,7 +507,6 @@
       }
     }
 
-    // Gerencia a ocultação dos botões e a permanência da barra de progresso
     function ativarOcultacaoDeControles(container) {
       let hideTimeout = null;
 
