@@ -47,7 +47,7 @@
     h2 { margin-bottom: 20px; text-align: center; color: #38bdf8; }
     
     .form-group { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
-    .input-row { display: flex; gap: 10px; }
+    .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
     select, input[type="text"] {
       padding: 12px 16px;
       border-radius: 8px;
@@ -56,9 +56,13 @@
       color: #fff;
       font-size: 15px;
       outline: none;
+      width: 100%;
     }
-    select { min-width: 150px; cursor: pointer; }
-    input[type="text"] { flex: 1; }
+    @media(min-width: 600px) {
+      select { width: auto; min-width: 150px; }
+      input[type="text"] { flex: 1; }
+    }
+    select { cursor: pointer; }
     select:focus, input[type="text"]:focus { border-color: #38bdf8; }
 
     .btn-main {
@@ -70,11 +74,13 @@
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
+      width: 100%;
     }
     .btn-main:hover { background: #0369a1; }
 
     .output-section { display: none; margin-top: 25px; border-top: 1px solid #334155; padding-top: 25px; }
-    .copy-row { display: flex; gap: 10px; margin-top: 8px; }
+    .copy-row { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+    .copy-row input { flex: 1; min-width: 200px; }
     .btn-action {
       padding: 10px 16px;
       background: #334155;
@@ -88,6 +94,10 @@
       align-items: center;
       gap: 8px;
       justify-content: center;
+      width: 100%;
+    }
+    @media(min-width: 500px) {
+      .btn-action { width: auto; }
     }
     .btn-action:hover { background: #475569; }
 
@@ -109,8 +119,9 @@
       border: none;
     }
 
+    /* Ajuste para permitir clique no iframe do YT caso necessário no mobile */
     .custom-player-box.yt-mode .yt-embed-wrapper {
-      pointer-events: none;
+      pointer-events: auto;
     }
 
     /* Marca d'água Discreta */
@@ -148,7 +159,8 @@
       transition: opacity 0.3s ease;
     }
     .custom-player-box:hover .player-controls,
-    .custom-player-box.show-controls .player-controls {
+    .custom-player-box.show-controls .player-controls,
+    .custom-player-box.paused .player-controls {
       opacity: 1;
     }
 
@@ -176,7 +188,10 @@
     .controls-left, .controls-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+    }
+    @media(min-width: 450px) {
+      .controls-left, .controls-right { gap: 12px; }
     }
 
     .ctrl-btn {
@@ -206,12 +221,15 @@
     .volume-slider {
       -webkit-appearance: none;
       appearance: none;
-      width: 60px;
+      width: 50px;
       height: 4px;
       background: rgba(255, 255, 255, 0.3);
       border-radius: 2px;
       outline: none;
       cursor: pointer;
+    }
+    @media(min-width: 450px) {
+      .volume-slider { width: 60px; }
     }
     .volume-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -245,7 +263,10 @@
     .speed-option:hover { background: #0284c7; }
     .speed-option.selected { color: #38bdf8; font-weight: bold; }
 
-    .time-display { font-size: 12px; font-family: monospace; }
+    .time-display { font-size: 11px; font-family: monospace; }
+    @media(min-width: 450px) {
+      .time-display { font-size: 12px; }
+    }
 
     body.embed-mode { 
       background: #000; margin: 0; padding: 0; overflow: hidden; height: 100vh; width: 100vw;
@@ -271,6 +292,7 @@
       position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       color: #94a3b8; font-size: 14px; z-index: 10; text-align: center;
+      width: 80%;
     }
   </style>
 </head>
@@ -347,13 +369,11 @@
       checkEmbedMode();
 
       // --- CAMADA DE SEGURANÇA E BLOQUEIOS ---
-      // 1. Bloquear o Botão Direito (Menu de Contexto)
       document.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         return false;
       });
 
-      // 2. Bloquear Atalhos de Teclado (F12, Inspetor, Ctrl+U, Ctrl+C, Ctrl+S)
       document.addEventListener("keydown", (e) => {
         if (e.key === "F12") {
           e.preventDefault();
@@ -369,11 +389,9 @@
         }
       });
 
-      // 3. Bloquear Ações de Copiar e Cortar
       document.addEventListener("copy", (e) => e.preventDefault());
       document.addEventListener("cut", (e) => e.preventDefault());
 
-      // 4. Escudo Anti-Redirecionamento / Sandboxing para iframes (Impede o OK.ru de tirar o usuário do site)
       setInterval(() => {
         const iframes = document.querySelectorAll("iframe");
         iframes.forEach(iframe => {
@@ -421,6 +439,25 @@
       renderizarPlayer(server, inputVal, previewContainer);
     }
 
+    // Função auxiliar para gerenciar Fullscreen com rotação automática em landscape (Mobile)
+    function toggleFullscreen(container) {
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().then(() => {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock("landscape").catch(() => {});
+          }
+        }).catch(err => {
+          console.error("Erro ao entrar em tela cheia:", err);
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          if (screen.orientation && screen.orientation.unlock) {
+            try { screen.orientation.unlock(); } catch(e) {}
+          }
+        }).catch(() => {});
+      }
+    }
+
     async function renderizarPlayer(server, target, container) {
       if (ytTimer) clearInterval(ytTimer);
       container.classList.remove("yt-mode");
@@ -466,8 +503,7 @@
             </div>
           `;
           container.querySelector("#fullBtn").addEventListener("click", () => {
-            if (!document.fullscreenElement) container.requestFullscreen();
-            else document.exitFullscreen();
+            toggleFullscreen(container);
           });
           return;
         }
@@ -554,15 +590,21 @@
       const progressContainer = container.querySelector("#progressContainer");
       const timeDisplay = container.querySelector("#timeDisplay");
 
-      playBtn.addEventListener("click", () => {
-        if (video.paused) { video.play(); playBtn.innerHTML = SVG_PAUSE; }
-        else { video.pause(); playBtn.innerHTML = SVG_PLAY; }
-      });
+      function togglePlay() {
+        if (video.paused) {
+          video.play().then(() => {
+            playBtn.innerHTML = SVG_PAUSE;
+            container.classList.remove("paused");
+          }).catch(() => {});
+        } else {
+          video.pause();
+          playBtn.innerHTML = SVG_PLAY;
+          container.classList.add("paused");
+        }
+      }
 
-      video.addEventListener("click", () => {
-        if (video.paused) { video.play(); playBtn.innerHTML = SVG_PAUSE; }
-        else { video.pause(); playBtn.innerHTML = SVG_PLAY; }
-      });
+      playBtn.addEventListener("click", togglePlay);
+      video.addEventListener("click", togglePlay);
 
       muteBtn.addEventListener("click", () => {
         video.muted = !video.muted;
@@ -617,8 +659,7 @@
       });
 
       fullBtn.addEventListener("click", () => {
-        if (!document.fullscreenElement) container.requestFullscreen();
-        else document.exitFullscreen();
+        toggleFullscreen(container);
       });
     }
 
@@ -665,6 +706,7 @@
       const progressBar = container.querySelector("#progressBar");
       const progressContainer = container.querySelector("#progressContainer");
       const timeDisplay = container.querySelector("#timeDisplay");
+      const ytWrapper = container.querySelector(".yt-embed-wrapper");
 
       ytPlayerInstance = new YT.Player(playerElementId, {
         videoId: ytId,
@@ -672,10 +714,33 @@
         events: {
           onReady: (event) => {
             try { event.target.unloadModule("captions"); } catch(e) {}
+            
+            // Tratamento de clique inicial para desbloquear reprodução em dispositivos móveis
+            ytWrapper.addEventListener("click", () => {
+              if (ytPlayerInstance && ytPlayerInstance.getPlayerState) {
+                const state = ytPlayerInstance.getPlayerState();
+                if (state === YT.PlayerState.PLAYING) {
+                  ytPlayerInstance.pauseVideo();
+                } else {
+                  ytPlayerInstance.playVideo();
+                }
+              }
+            });
+
             ytTimer = setInterval(() => {
               if (ytPlayerInstance && ytPlayerInstance.getCurrentTime) {
                 const currentTime = ytPlayerInstance.getCurrentTime() || 0;
                 const duration = ytPlayerInstance.getDuration() || 0;
+                const state = ytPlayerInstance.getPlayerState();
+
+                if (state === YT.PlayerState.PLAYING) {
+                  playBtn.innerHTML = SVG_PAUSE;
+                  container.classList.remove("paused");
+                } else {
+                  playBtn.innerHTML = SVG_PLAY;
+                  container.classList.add("paused");
+                }
+
                 if (duration > 0) {
                   progressBar.style.width = `${(currentTime / duration) * 100}%`;
                   const curMin = Math.floor(currentTime / 60).toString().padStart(2, '0');
@@ -686,6 +751,15 @@
                 }
               }
             }, 500);
+          },
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.PLAYING) {
+              playBtn.innerHTML = SVG_PAUSE;
+              container.classList.remove("paused");
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+              playBtn.innerHTML = SVG_PLAY;
+              container.classList.add("paused");
+            }
           }
         }
       });
@@ -706,10 +780,8 @@
         if (ytPlayerInstance && ytPlayerInstance.getPlayerState) {
           if (ytPlayerInstance.getPlayerState() === YT.PlayerState.PLAYING) {
             ytPlayerInstance.pauseVideo();
-            playBtn.innerHTML = SVG_PLAY;
           } else {
             ytPlayerInstance.playVideo();
-            playBtn.innerHTML = SVG_PAUSE;
           }
         }
       });
@@ -740,8 +812,7 @@
       });
 
       fullBtn.addEventListener("click", () => {
-        if (!document.fullscreenElement) container.requestFullscreen();
-        else document.exitFullscreen();
+        toggleFullscreen(container);
       });
     }
 
