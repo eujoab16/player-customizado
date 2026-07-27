@@ -14,14 +14,12 @@
       box-sizing: border-box; 
       margin: 0; 
       padding: 0; 
-      /* Bloqueio global de seleção de texto */
       -webkit-user-select: none !important;
       -moz-user-select: none !important;
       -ms-user-select: none !important;
       user-select: none !important;
     }
 
-    /* Permite selecionar e digitar apenas nos inputs e textareas */
     input, textarea {
       -webkit-user-select: text !important;
       -moz-user-select: text !important;
@@ -49,7 +47,6 @@
     .form-group { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
     .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
     
-    /* Grupo para input com botão colar embutido */
     .input-with-paste {
       display: flex;
       flex: 1;
@@ -144,14 +141,14 @@
     }
 
     .custom-player-box iframe {
-      pointer-events: none !important;
+      pointer-events: auto !important;
     }
 
     .player-shield {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       z-index: 15;
-      cursor: pointer;
+      display: none; /* Desativado para o OK.ru para o play nativo funcionar livremente */
     }
 
     .player-watermark {
@@ -464,17 +461,6 @@
 
       document.addEventListener("copy", (e) => e.preventDefault());
       document.addEventListener("cut", (e) => e.preventDefault());
-
-      setInterval(() => {
-        const iframes = document.querySelectorAll("iframe");
-        iframes.forEach(iframe => {
-          try {
-            if (!iframe.hasAttribute("sandbox") || !iframe.getAttribute("sandbox").includes("allow-scripts")) {
-              iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation");
-            }
-          } catch (err) {}
-        });
-      }, 1000);
     });
 
     window.addEventListener("hashchange", checkEmbedMode);
@@ -584,33 +570,13 @@
           const okIdMatch = target.match(/(?:videoembed\/|video\/|embed\/)([\d]+)/) || target.match(/([\d]{8,})/);
           const okId = okIdMatch ? okIdMatch[1] : target;
           
+          // Player nativo do OK.ru puro sem escudo e sem barra falsa, permitindo dar play normalmente
           container.innerHTML = `
             <div class="player-watermark">${WATERMARK_TEXT}</div>
             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; background: #000;">
-              <iframe id="okruIframe" src="https://ok.ru/videoembed/${okId}" sandbox="allow-scripts allow-same-origin allow-presentation allow-forms" allowfullscreen scrolling="no" allow="autoplay; encrypted-media *;" style="width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;"></iframe>
-            </div>
-            <div class="player-shield" id="shieldLayer"></div>
-            <div class="player-controls">
-              <div class="controls-main-content">
-                <div class="controls-row" style="justify-content: flex-end;">
-                  <button class="ctrl-btn" id="fullBtn" title="Tela Cheia">${SVG_FULLSCREEN}</button>
-                </div>
-              </div>
+              <iframe src="https://ok.ru/videoembed/${okId}" sandbox="allow-scripts allow-same-origin allow-presentation allow-forms" allowfullscreen scrolling="no" allow="autoplay; encrypted-media *;" style="width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;"></iframe>
             </div>
           `;
-          
-          const shield = container.querySelector("#shieldLayer");
-          const iframeEl = container.querySelector("#okruIframe");
-
-          shield.addEventListener("click", () => {
-            shield.style.display = "none";
-            try { iframeEl.focus(); } catch(e) {}
-          });
-
-          container.querySelector("#fullBtn").addEventListener("click", (e) => {
-            e.stopPropagation();
-            toggleFullscreen(container);
-          });
           return;
         }
 
@@ -657,7 +623,7 @@
       container.innerHTML = `
         <div class="player-watermark">${WATERMARK_TEXT}</div>
         <video id="myVideo" src="${videoSrc}" crossorigin="anonymous" playsinline style="width:100%; height:100%;"></video>
-        <div class="player-shield" id="shieldLayer"></div>
+        <div class="player-shield" id="shieldLayer" style="display: block;"></div>
         <div class="player-controls">
           <div class="progress-bar-container" id="progressContainer">
             <div class="progress-bar-fill" id="progressBar"></div>
@@ -777,7 +743,7 @@
       container.innerHTML = `
         <div class="player-watermark">${WATERMARK_TEXT}</div>
         <div class="yt-embed-wrapper"><div id="${playerElementId}"></div></div>
-        <div class="player-shield" id="shieldLayer"></div>
+        <div class="player-shield" id="shieldLayer" style="display: block;"></div>
         <div class="player-controls">
           <div class="progress-bar-container" id="progressContainer">
             <div class="progress-bar-fill" id="progressBar"></div>
